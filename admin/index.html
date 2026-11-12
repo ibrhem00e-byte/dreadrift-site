@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dread Rift Admin</title>
+<style>
+  :root {
+    --bg: #0d0b0e; --panel: #17141a; --line: #2a2430; --text: #efeaf0; --dim: #948b9a;
+    --red: #e0384f; --green: #4fd16b; --gold: #f5c542; --violet: #a66bff; --blue: #4ea1ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+  header h1 { font-size: 18px; margin: 0; flex: 1; color: var(--red); }
+  header .who { color: var(--dim); font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  section h2 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  section h2 .spacer { flex: 1; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .stat { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .stat .n { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .l { color: var(--dim); font-size: 13px; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .bar > i { display: block; height: 100%; background: var(--green); width: 0; transition: width .4s; }
+  .bar.warn > i { background: var(--gold); } .bar.bad > i { background: var(--red); }
+  button { font: inherit; border: 0; border-radius: 10px; padding: 9px 14px; background: var(--line); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--red); color: #fff; font-weight: 700; }
+  button.small { padding: 5px 10px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: default; }
+  a.btn { display: inline-block; text-decoration: none; background: var(--line); color: var(--text); border-radius: 10px; padding: 9px 14px; margin: 4px 0 0 8px; }
+  input { font: inherit; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%; }
+  label { display: block; color: var(--dim); font-size: 13px; margin-bottom: 4px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .looks { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 14px; }
+  .look { border: 2px solid var(--line); background: var(--bg); border-radius: 10px; padding: 6px 10px; cursor: pointer; font-size: 14px; user-select: none; }
+  .look small { display: block; font-size: 11px; color: var(--dim); }
+  .look.hunter { color: #ff8a8a; } .look.runner { color: #8ac2ff; }
+  .look.on { background: #2a1018; border-color: var(--red); }
+  .player { color: var(--dim); font-size: 14px; min-height: 22px; }
+  .player b { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; font-size: 13px; }
+  .note { color: var(--dim); font-size: 13px; }
+  .msg { margin-top: 10px; font-size: 14px; min-height: 20px; }
+  .ok { color: var(--green); } .err { color: var(--red); }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  #login { max-width: 420px; margin: 18vh auto; text-align: center; padding: 24px; }
+  #login h1 { margin: 0 0 6px; color: var(--red); }
+  .hidden { display: none !important; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 520px) { .stat .n { font-size: 22px; } main { padding: 12px; } }
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <h1>DREAD RIFT</h1>
+  <p class="note">لوحة التحكم — للمطوّر فقط</p>
+  <button class="primary" id="signIn">الدخول بحساب Google</button>
+  <p class="msg err" id="loginMsg"></p>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>لوحة تحكم Dread Rift</h1>
+    <span class="who" id="who"></span>
+    <button class="small" id="signOut">خروج</button>
+  </header>
+  <main>
+
+    <section>
+      <h2>اللاعبون الآن <span class="spacer"></span><button class="small" id="refreshPlayers">تحديث</button></h2>
+      <div class="grid">
+        <div class="stat"><div class="n" id="online">—</div><div class="l">متصلون الآن</div></div>
+        <div class="stat"><div class="n" id="inMatch">—</div><div class="l">داخل مباراة</div></div>
+        <div class="stat"><div class="n" id="total">—</div><div class="l">كل اللاعبين المسجلين</div></div>
+      </div>
+      <p class="note" id="playersNote">«متصل» = فتح اللعبة خلال آخر ٤ دقائق ونصف. Photon يتحمّل ١٠٠ لاعب داخل مباراة في نفس اللحظة (بعد تفعيل الـ 100 المجانية؛ قبلها ٢٠). لو وصلوا ٨٠، حان وقت الترقية.</p>
+      <div class="bar" id="ccuBar"><i></i></div>
+    </section>
+
+    <section>
+      <h2>الاستهلاك</h2>
+      <p class="note">Firebase المجاني كل يوم: ٥٠٬٠٠٠ قراءة، ٢٠٬٠٠٠ كتابة، ٢٠٬٠٠٠ حذف. يتصفّر ١٠:٠٠ صباحًا بتوقيت السعودية. لو قربت من النص، حان وقت Blaze.</p>
+      <a class="btn" target="_blank" rel="noopener" href="https://console.firebase.google.com/project/dread-rift/firestore/databases/-default-/usage">أرقام Firebase ↗</a>
+      <a class="btn" target="_blank" rel="noopener" href="https://console.firebase.google.com/project/dread-rift/crashlytics">الأعطال (Crashlytics) ↗</a>
+      <a class="btn" target="_blank" rel="noopener" href="https://dashboard.photonengine.com/">لوحة Photon ↗</a>
+      <a class="btn" target="_blank" rel="noopener" href="https://play.google.com/console">Google Play Console ↗</a>
+    </section>
+
+    <section>
+      <h2>إرسال هدية</h2>
+      <div class="row">
+        <div><label for="giftId">رقم اللاعب (ID)</label><input id="giftId" inputmode="numeric" placeholder="مثلًا 57"></div>
+        <div><label for="giftCoins">عملات</label><input id="giftCoins" inputmode="numeric" placeholder="0"></div>
+        <div><label for="giftShards">شظايا</label><input id="giftShards" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="player" id="giftPlayer"></div>
+      <label style="margin-top:10px">الشخصيات (اضغط لتختار)</label>
+      <div class="looks" id="looks"></div>
+      <button class="primary" id="sendGift">إرسال الهدية 🎁</button>
+      <div class="msg" id="giftMsg"></div>
+      <p class="note">تصل للاعب خلال ثوانٍ لو كانت اللعبة مفتوحة، أو أول ما يفتحها، ويشوف «وصلتك هدية» في الردهة. لو أرسلت هديتين قبل ما يفتح، تنجمع في هدية وحدة. الشخصية اللي يملكها من قبل ما تنعطى مرة ثانية.</p>
+    </section>
+
+    <section>
+      <h2>البلاغات <span class="spacer"></span><button class="small" id="refreshReports">تحديث</button></h2>
+      <div class="scroll"><table><thead><tr><th>الوقت</th><th>على اللاعب</th><th>السبب</th><th>من</th><th></th></tr></thead><tbody id="reports"></tbody></table></div>
+      <p class="note">«تم» يحذف البلاغ من القائمة بعد ما تتعامل معه.</p>
+    </section>
+
+    <section>
+      <h2>أعلى الرتب <span class="spacer"></span><button class="small" id="refreshRanks">تحديث</button></h2>
+      <div class="two">
+        <div class="scroll"><table><thead><tr><th>#</th><th>الصيّاد</th><th>النقاط</th></tr></thead><tbody id="topHunters"></tbody></table></div>
+        <div class="scroll"><table><thead><tr><th>#</th><th>الهارب</th><th>النقاط</th></tr></thead><tbody id="topRunners"></tbody></table></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, orderBy, limit, runTransaction,
+         deleteDoc, getCountFromServer, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// The project's web settings (Firebase console > Project settings > Your apps > the web app «Dread Rift Admin»). Not
+// secret: the Firestore rules decide what this page may read or write, and only the developer's Google account may.
+const firebaseConfig = {
+  apiKey: "AIzaSyA8v4skbHsWCbxABqmrpVAyt_rfYDPRl1A",
+  authDomain: "dread-rift.firebaseapp.com",
+  projectId: "dread-rift",
+  appId: "1:317824058227:web:969da0ec8eb6ae85cc7b06",
+};
+const ONLINE_MS = (120 * 2 + 30) * 1000; // Backend.OnlineWindow
+const PHOTON_CCU = 100;
+
+// Every look that can be given (Shop.Offers; the free two left out).
+const LOOKS = [
+  ["smiler", "المبتسم", "hunter"], ["doll", "الدمية", "hunter"], ["doctor", "الطبيب", "hunter"], ["priest", "المشعوذ", "hunter"],
+  ["executed", "المعدوم", "hunter"], ["patient", "المريض 13", "hunter"], ["butcher", "الجزّار", "hunter"], ["rabbit", "رجل الأرنب", "hunter"],
+  ["bride", "العروس", "hunter"],
+  ["journalist", "الصحفي", "runner"], ["psychiatrist", "الطبيب النفسي", "runner"], ["jailer", "الجلاد", "runner"],
+  ["electrician", "الكهربائي", "runner"], ["soldier", "الجندي", "runner"], ["ghosthunter", "صائد الأشباح", "runner"],
+  ["skater", "المتزلجة", "runner"], ["ninja", "النينجا", "runner"], ["student", "الطالبة", "runner"],
+];
+const NAMES = Object.fromEntries(LOOKS.map(l => [l[0], l[1]]));
+const TIERS = [[2000, null], [1400, "ماسي"], [900, "بلاتيني"], [500, "ذهبي"], [200, "فضّي"], [0, "برونزي"]];
+const tier = (p, side) => { for (const [from, name] of TIERS) if (p >= from) return name ?? (side === "hunter" ? "كابوس" : "شبح"); return "برونزي"; };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const num = n => Number(n).toLocaleString("ar-SA");
+const when = ts => ts && ts.toDate ? ts.toDate().toLocaleString("ar-SA", { dateStyle: "short", timeStyle: "short" }) : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+$("signIn").onclick = async () => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  try { await signInWithPopup(auth, provider); }
+  catch (e) { $("loginMsg").textContent = "تعذّر الدخول: " + e.code; }
+};
+$("signOut").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  $("login").classList.toggle("hidden", !!user);
+  $("app").classList.toggle("hidden", !user);
+  if (!user) return;
+  $("who").textContent = user.email || "";
+  buildLooks();
+  refreshPlayers(); refreshReports(); refreshRanks();
+});
+
+// ---------- players ----------
+async function refreshPlayers() {
+  try {
+    const since = Timestamp.fromMillis(Date.now() - ONLINE_MS);
+    const snap = await getDocs(query(collection(db, "users"), where("seen", ">=", since), limit(500)));
+    let online = 0, match = 0;
+    snap.forEach(d => { const u = d.data(); if (u.away) return; online++; if (u.session) match++; });
+    $("online").textContent = num(online);
+    $("inMatch").textContent = num(match);
+    setBar("ccuBar", match / PHOTON_CCU);
+    const total = await getCountFromServer(collection(db, "users"));
+    $("total").textContent = num(total.data().count);
+  } catch (e) { $("playersNote").textContent = "تعذّر: " + e.message; }
+}
+$("refreshPlayers").onclick = refreshPlayers;
+
+function setBar(id, f) {
+  const bar = $(id);
+  bar.classList.toggle("warn", f >= 0.5 && f < 0.8);
+  bar.classList.toggle("bad", f >= 0.8);
+  bar.firstElementChild.style.width = Math.min(100, f * 100) + "%";
+}
+
+// ---------- gifts (Gifts.cs) ----------
+const chosen = new Set();
+function buildLooks() {
+  const box = $("looks");
+  if (box.childElementCount) return;
+  for (const [id, name, side] of LOOKS) {
+    const el = document.createElement("div");
+    el.className = "look " + side;
+    el.innerHTML = `${esc(name)}<small>${side === "hunter" ? "صيّاد" : "هارب"}</small>`;
+    el.onclick = () => { chosen.has(id) ? chosen.delete(id) : chosen.add(id); el.classList.toggle("on", chosen.has(id)); };
+    box.appendChild(el);
+  }
+}
+
+let lookupTimer;
+$("giftId").oninput = () => { clearTimeout(lookupTimer); lookupTimer = setTimeout(lookup, 400); };
+async function lookup() {
+  const id = $("giftId").value.trim();
+  $("giftPlayer").textContent = "";
+  if (!/^\d+$/.test(id)) return;
+  try {
+    const owner = await getDoc(doc(db, "ids", id));
+    if (!owner.exists()) { $("giftPlayer").innerHTML = '<span class="err">ما فيه لاعب بهالرقم</span>'; return; }
+    const card = await getDoc(doc(db, "users", owner.data().uid));
+    const u = card.exists() ? card.data() : {};
+    $("giftPlayer").innerHTML = `اللاعب: <b>${esc(u.name || "—")}</b> · صيّاد ${num(u.hunter || 0)} · هارب ${num(u.runner || 0)}`;
+  } catch (e) { $("giftPlayer").textContent = "تعذّر: " + e.message; }
+}
+
+$("sendGift").onclick = async () => {
+  const id = $("giftId").value.trim();
+  const coins = parseInt($("giftCoins").value || "0", 10) || 0;
+  const shards = parseInt($("giftShards").value || "0", 10) || 0;
+  const items = [...chosen];
+  const msg = $("giftMsg");
+  msg.className = "msg";
+  const bad = t => { msg.textContent = t; msg.classList.add("err"); };
+  if (!/^\d+$/.test(id)) return bad("اكتب رقم اللاعب");
+  if (coins < 0 || shards < 0 || coins > 1000000 || shards > 1000000) return bad("الكمية بين ٠ ومليون");
+  if (!coins && !shards && !items.length) return bad("اختر عملات أو شظايا أو شخصية");
+  const owner = await getDoc(doc(db, "ids", id));
+  if (!owner.exists()) return bad("ما فيه لاعب بهالرقم");
+  const summary = [coins && num(coins) + " عملة", shards && num(shards) + " شظية", ...items.map(i => NAMES[i])].filter(Boolean).join("، ");
+  if (!confirm(`إرسال للاعب ${id}:\n${summary}`)) return;
+  $("sendGift").disabled = true;
+  try {
+    // An unclaimed gift already there: this one is added to it.
+    await runTransaction(db, async tx => {
+      const ref = doc(db, "gifts", id);
+      const old = await tx.get(ref);
+      const o = old.exists() ? old.data() : {};
+      const all = new Set(String(o.items || "").split(",").map(s => s.trim()).filter(Boolean));
+      items.forEach(i => all.add(i));
+      const data = {};
+      if ((o.coins || 0) + coins) data.coins = (o.coins || 0) + coins;
+      if ((o.shards || 0) + shards) data.shards = (o.shards || 0) + shards;
+      if (all.size) data.items = [...all].join(",");
+      tx.set(ref, data);
+    });
+    msg.textContent = "تم الإرسال ✓ " + summary;
+    msg.classList.add("ok");
+    $("giftCoins").value = ""; $("giftShards").value = "";
+    chosen.clear(); document.querySelectorAll(".look.on").forEach(e => e.classList.remove("on"));
+  } catch (e) { bad("تعذّر: " + e.message); }
+  $("sendGift").disabled = false;
+};
+
+// ---------- reports (Reports.cs) ----------
+const REASONS = { name: "اسم مسيء", voice: "كلام مسيء بالصوت", cheat: "غش" };
+async function refreshReports() {
+  const body = $("reports");
+  try {
+    const snap = await getDocs(query(collection(db, "reports"), orderBy("at", "desc"), limit(50)));
+    body.innerHTML = snap.empty ? '<tr><td colspan="5" class="note">ما فيه بلاغات 👍</td></tr>' : "";
+    snap.forEach(d => {
+      const r = d.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${when(r.at)}</td><td><b>${esc(r.targetName)}</b> #${esc(r.target)}</td><td>${esc(REASONS[r.reason] || r.reason)}</td><td>#${esc(r.fromId)}</td><td><button class="small">تم</button></td>`;
+      tr.querySelector("button").onclick = async () => { await deleteDoc(d.ref); tr.remove(); };
+      body.appendChild(tr);
+    });
+  } catch (e) { body.innerHTML = `<tr><td colspan="5" class="err">تعذّر: ${esc(e.message)}</td></tr>`; }
+}
+$("refreshReports").onclick = refreshReports;
+
+// ---------- the top of each rank ----------
+async function refreshRanks() {
+  for (const side of ["hunter", "runner"]) {
+    const body = $(side === "hunter" ? "topHunters" : "topRunners");
+    try {
+      const snap = await getDocs(query(collection(db, "users"), orderBy(side, "desc"), limit(10)));
+      body.innerHTML = snap.empty ? '<tr><td colspan="3" class="note">ما فيه لاعبين بعد</td></tr>' : "";
+      let i = 0;
+      snap.forEach(d => {
+        const u = d.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${++i}</td><td><b>${esc(u.name)}</b> #${esc(u.id)}</td><td>${num(u[side] || 0)} · ${tier(u[side] || 0, side)}</td>`;
+        body.appendChild(tr);
+      });
+    } catch (e) { body.innerHTML = `<tr><td colspan="3" class="err">تعذّر: ${esc(e.message)}</td></tr>`; }
+  }
+}
+$("refreshRanks").onclick = refreshRanks;
+</script>
+</body>
+</html>
